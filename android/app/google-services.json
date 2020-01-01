@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "485317674524",
+    "firebase_url": "https://micro-eye-252307.firebaseio.com",
+    "project_id": "micro-eye-252307",
+    "storage_bucket": "micro-eye-252307.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485317674524:android:7cafa6b88de77839c041d9",
+        "android_client_info": {
+          "package_name": "com.rochano.myexpenses"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "485317674524-0kmhjoh35tassal7524bvl2nm4r72gvl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDm5eegRxM5m4fMs3jH1TbQKzvoPBdJZH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "485317674524-0kmhjoh35tassal7524bvl2nm4r72gvl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "485317674524-tnq32eaf4hieh142bt9au4kad23uteq4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rochano.myexpenses"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

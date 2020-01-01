@@ -188,7 +188,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(26.0),
+              padding: const EdgeInsets.all(16.0),
               child: Form(
                 key: _form,
                 child: ListView(
@@ -206,13 +206,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                               Align(
                                 alignment: Alignment.center,
                                 child: CircleAvatar(
-                                  radius: 120,
+                                  radius: 100,
                                   backgroundColor:
                                       Theme.of(context).primaryColor,
                                   child: ClipOval(
                                     child: SizedBox(
-                                      width: 230.0,
-                                      height: 230.0,
+                                      width: 190.0,
+                                      height: 190.0,
                                       child: _image != null
                                           ? Image.file(
                                               _image,
