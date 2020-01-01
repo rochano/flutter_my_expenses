@@ -48,7 +48,6 @@ class TransactionScreen extends StatelessWidget {
                                 trsData.items[i].title,
                                 trsData.items[i].amount,
                                 trsData.items[i].date),
-                            Divider(),
                           ],
                         ),
                       ),

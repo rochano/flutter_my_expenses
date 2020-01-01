@@ -7,6 +7,11 @@ class Transaction with ChangeNotifier {
   final int quantity;
   final double amount;
   final DateTime date;
+  String image;
+
+  set pickImage(String image) {
+    this.image = image;
+  }
 
   Transaction({
     @required this.id,
@@ -14,6 +19,7 @@ class Transaction with ChangeNotifier {
     @required this.price,
     @required this.quantity,
     @required this.amount,
-    @required this.date
+    @required this.date,
+    this.image
   });
 }

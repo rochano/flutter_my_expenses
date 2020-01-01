@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 
 import '../providers/transaction.dart';
@@ -19,18 +24,25 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   var _amountController = TextEditingController();
   DateTime _selectedDate;
   var _dateController = TextEditingController();
+  File _image;
+  String _imageUrl;
+  final FirebaseStorage _storage =
+      FirebaseStorage(storageBucket: 'gs://micro-eye-252307.appspot.com');
+
   var _editedTransaction = Transaction(
     id: null,
     title: '',
     price: 0,
     quantity: 0,
     amount: 0,
+    date: null,
   );
   var _initValues = {
     'title': '',
     'price': '',
     'quantity': '',
     'amount': '',
+    'image': '',
   };
   var _isInit = true;
   var _isLoading = false;
@@ -47,6 +59,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           'price': _editedTransaction.price.toString(),
           'quantity': _editedTransaction.quantity.toString(),
           'amount': _editedTransaction.amount.toString(),
+          'image': _editedTransaction.image,
         };
         _priceController.text = _editedTransaction.price.toString();
         _quantityController.text = _editedTransaction.quantity.toString();
@@ -54,10 +67,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         setState(() {
           _selectedDate = _editedTransaction.date;
         });
+        if (_initValues['image'] != null && _initValues['image'].isNotEmpty) {
+          var ref = _storage.ref().child(_initValues['image']);
+          ref.getDownloadURL().then((loc) => setState(() => _imageUrl = loc));
+        }
       } else {
         setState(() {
           _selectedDate = DateTime.now();
         });
+        _quantityController.text = '1';
       }
       _dateController.text = DateFormat.yMMMd().format(_selectedDate);
     }
@@ -70,6 +88,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _priceController.dispose();
     _quantityController.dispose();
     _amountController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
@@ -82,6 +101,19 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     setState(() {
       _isLoading = false;
     });
+    _editedTransaction.pickImage = _initValues['image'];
+
+    if (_image != null) {
+      String fileName =
+          _initValues['image'] != null && _initValues['image'].isNotEmpty
+              ? _initValues['image']
+              : path.basename(_image.path);
+      StorageReference firebaseStorageRef = _storage.ref().child(fileName);
+      StorageUploadTask uploadTask = firebaseStorageRef.putFile(_image);
+      StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+      _editedTransaction.pickImage = fileName;
+    }
+
     if (_editedTransaction.id != null) {
       await Provider.of<Transactions>(context, listen: false)
           .updateTransaction(_editedTransaction.id, _editedTransaction);
@@ -130,6 +162,17 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     });
   }
 
+  Future<void> _takePicture() async {
+    final imageFile =
+        await ImagePicker.pickImage(source: ImageSource.camera, maxWidth: 600);
+    if (imageFile == null) {
+      return null;
+    }
+    setState(() {
+      _image = imageFile;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,11 +188,80 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(26.0),
               child: Form(
                 key: _form,
                 child: ListView(
                   children: <Widget>[
+                    Container(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          SizedBox(
+                            height: 20.0,
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              Align(
+                                alignment: Alignment.center,
+                                child: CircleAvatar(
+                                  radius: 120,
+                                  backgroundColor:
+                                      Theme.of(context).primaryColor,
+                                  child: ClipOval(
+                                    child: SizedBox(
+                                      width: 230.0,
+                                      height: 230.0,
+                                      child: _image != null
+                                          ? Image.file(
+                                              _image,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                            )
+                                          : _initValues['image'] != null &&
+                                                  _initValues['image']
+                                                      .isNotEmpty
+                                              ? (_imageUrl != null &&
+                                                      _imageUrl.isNotEmpty
+                                                  ? Image.network(
+                                                      _imageUrl,
+                                                      fit: BoxFit.cover,
+                                                      width: double.infinity,
+                                                    )
+                                                  : CircularProgressIndicator(
+                                                      backgroundColor:
+                                                          Colors.white,
+                                                    ))
+                                              : Padding(
+                                                  padding:
+                                                      EdgeInsets.only(top: 105),
+                                                  child: Text(
+                                                    'No Image Taken',
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(top: 60.0),
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.camera_alt,
+                                    size: 30.0,
+                                  ),
+                                  onPressed: _takePicture,
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
                     TextFormField(
                       initialValue: _initValues['title'],
                       decoration: InputDecoration(labelText: 'Title'),
@@ -172,7 +284,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     ),
                     TextFormField(
                       //initialValue: _initValues['price'],
-                      decoration: InputDecoration(labelText: 'Price (Baht)'),
+                      decoration: InputDecoration(labelText: 'Price(\u0e3f)'),
                       textInputAction: TextInputAction.next,
                       keyboardType: TextInputType.numberWithOptions(),
                       validator: (value) {
@@ -241,7 +353,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       },
                     ),
                     TextFormField(
-                      decoration: InputDecoration(labelText: 'Amount (Baht)'),
+                      decoration: InputDecoration(labelText: 'Amount(\u0e3f)'),
                       enabled: false,
                       controller: _amountController,
                       onSaved: (value) {
@@ -286,7 +398,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                           )
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               )),
