@@ -37,6 +37,7 @@ class Transactions with ChangeNotifier {
           price: trsData['price'],
           quantity: trsData['quantity'],
           amount: trsData['amount'],
+          date: DateTime.parse(trsData['date']),
         ));
       });
       _items = loadedTransactions;
@@ -56,7 +57,8 @@ class Transactions with ChangeNotifier {
           'title': transaction.title,
           'price': transaction.price,
           'quantity': transaction.quantity,
-          'amount': transaction.amount
+          'amount': transaction.amount,
+          'date': transaction.date.toIso8601String(),
         }),
       );
       final newTransaction = Transaction(
@@ -64,6 +66,7 @@ class Transactions with ChangeNotifier {
         price: transaction.price,
         quantity: transaction.quantity,
         amount: transaction.amount,
+        date: transaction.date,
         id: json.decode(response.body)['name'],
       );
       _items.add(newTransaction);
@@ -83,7 +86,8 @@ class Transactions with ChangeNotifier {
           'title': transaction.title,
           'price': transaction.price,
           'quantity': transaction.quantity,
-          'amount': transaction.amount
+          'amount': transaction.amount,
+          'date': transaction.date.toIso8601String(),
         }));
       _items[trsIndex] = transaction;
       notifyListeners();

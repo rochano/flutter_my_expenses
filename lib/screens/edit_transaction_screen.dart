@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/transaction.dart';
@@ -16,6 +17,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   var _priceController = TextEditingController();
   var _quantityController = TextEditingController();
   var _amountController = TextEditingController();
+  DateTime _selectedDate;
+  var _dateController = TextEditingController();
   var _editedTransaction = Transaction(
     id: null,
     title: '',
@@ -48,7 +51,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         _priceController.text = _editedTransaction.price.toString();
         _quantityController.text = _editedTransaction.quantity.toString();
         _amountController.text = _editedTransaction.amount.toString();
+        setState(() {
+          _selectedDate = _editedTransaction.date;
+        });
+      } else {
+        setState(() {
+          _selectedDate = DateTime.now();
+        });
       }
+      _dateController.text = DateFormat.yMMMd().format(_selectedDate);
     }
     _isInit = false;
     super.didChangeDependencies();
@@ -102,6 +113,23 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     Navigator.of(context).pop();
   }
 
+  void _presentDatePicker() {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    ).then((pickedDate) {
+      if (pickedDate == null) {
+        return null;
+      }
+      setState(() {
+        _selectedDate = pickedDate;
+      });
+      _dateController.text = DateFormat.yMMMd().format(_selectedDate);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +154,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       initialValue: _initValues['title'],
                       decoration: InputDecoration(labelText: 'Title'),
                       textInputAction: TextInputAction.next,
-                      onChanged: (_) {},
                       validator: (value) {
                         if (value.isEmpty) {
                           return 'Please provide a value.';
@@ -139,12 +166,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                             title: value,
                             price: _editedTransaction.price,
                             quantity: _editedTransaction.quantity,
-                            amount: _editedTransaction.amount);
+                            amount: _editedTransaction.amount,
+                            date: _selectedDate);
                       },
                     ),
                     TextFormField(
                       //initialValue: _initValues['price'],
-                      decoration: InputDecoration(labelText: 'Price'),
+                      decoration: InputDecoration(labelText: 'Price (Baht)'),
                       textInputAction: TextInputAction.next,
                       keyboardType: TextInputType.numberWithOptions(),
                       validator: (value) {
@@ -173,7 +201,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                             title: _editedTransaction.title,
                             price: double.parse(value),
                             quantity: _editedTransaction.quantity,
-                            amount: _editedTransaction.amount);
+                            amount: _editedTransaction.amount,
+                            date: _selectedDate);
                       },
                     ),
                     TextFormField(
@@ -207,12 +236,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                             title: _editedTransaction.title,
                             price: _editedTransaction.price,
                             quantity: int.parse(value),
-                            amount: _editedTransaction.amount);
+                            amount: _editedTransaction.amount,
+                            date: _selectedDate);
                       },
                     ),
                     TextFormField(
-                      //initialValue: _initValues['quantity'],
-                      decoration: InputDecoration(labelText: 'Amount'),
+                      decoration: InputDecoration(labelText: 'Amount (Baht)'),
                       enabled: false,
                       controller: _amountController,
                       onSaved: (value) {
@@ -221,9 +250,43 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                             title: _editedTransaction.title,
                             price: _editedTransaction.price,
                             quantity: _editedTransaction.quantity,
-                            amount: double.parse(value));
+                            amount: double.parse(value),
+                            date: _selectedDate);
                       },
                     ),
+                    Container(
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: TextFormField(
+                              decoration: InputDecoration(labelText: 'Date'),
+                              validator: (value) {
+                                if (value.isEmpty) {
+                                  return 'Please select a date.';
+                                }
+                                return null;
+                              },
+                              enabled: false,
+                              controller: _dateController,
+                              onSaved: (value) {
+                                _editedTransaction = Transaction(
+                                    id: _editedTransaction.id,
+                                    title: _editedTransaction.title,
+                                    price: _editedTransaction.price,
+                                    quantity: _editedTransaction.quantity,
+                                    amount: _editedTransaction.amount,
+                                    date: _selectedDate);
+                              },
+                            ),
+                          ),
+                          FlatButton(
+                            textColor: Theme.of(context).primaryColor,
+                            child: Icon(Icons.date_range),
+                            onPressed: _presentDatePicker,
+                          )
+                        ],
+                      ),
+                    )
                   ],
                 ),
               )),
