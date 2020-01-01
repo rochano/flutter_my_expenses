@@ -235,7 +235,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                                                     ))
                                               : Padding(
                                                   padding:
-                                                      EdgeInsets.only(top: 105),
+                                                      EdgeInsets.only(top: 85),
                                                   child: Text(
                                                     'No Image Taken',
                                                     style: TextStyle(
