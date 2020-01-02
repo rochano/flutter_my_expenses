@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 
 import '../providers/transaction.dart';
 import '../providers/transactions.dart';
+import '../widgets/image_input.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   static const routName = '/edit-transaction';
@@ -26,8 +26,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   var _dateController = TextEditingController();
   File _image;
   String _imageUrl;
-  final FirebaseStorage _storage =
-      FirebaseStorage(storageBucket: 'gs://micro-eye-252307.appspot.com');
 
   var _editedTransaction = Transaction(
     id: null,
@@ -68,7 +66,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           _selectedDate = _editedTransaction.date;
         });
         if (_initValues['image'] != null && _initValues['image'].isNotEmpty) {
-          var ref = _storage.ref().child(_initValues['image']);
+          var ref = FirebaseStorage.instance.ref().child(_initValues['image']);
           ref.getDownloadURL().then((loc) => setState(() => _imageUrl = loc));
         }
       } else {
@@ -99,7 +97,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
     _form.currentState.save();
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
     _editedTransaction.pickImage = _initValues['image'];
 
@@ -108,9 +106,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           _initValues['image'] != null && _initValues['image'].isNotEmpty
               ? _initValues['image']
               : path.basename(_image.path);
-      StorageReference firebaseStorageRef = _storage.ref().child(fileName);
-      StorageUploadTask uploadTask = firebaseStorageRef.putFile(_image);
-      StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+      StorageReference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child(fileName);
+      firebaseStorageRef.putFile(_image);
       _editedTransaction.pickImage = fileName;
     }
 
@@ -162,15 +160,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     });
   }
 
-  Future<void> _takePicture() async {
-    final imageFile =
-        await ImagePicker.pickImage(source: ImageSource.camera, maxWidth: 600);
-    if (imageFile == null) {
-      return null;
-    }
-    setState(() {
-      _image = imageFile;
-    });
+  void _selectImage(File pickedImage) {
+    _image = pickedImage;
   }
 
   @override
@@ -179,229 +170,165 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       appBar: AppBar(
         title: Text('Edit Transaction'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: _saveForm,
-          )
+          _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                  backgroundColor: Colors.white,
+                  strokeWidth: 2,
+                ))
+              : IconButton(
+                  icon: Icon(Icons.save),
+                  onPressed: _saveForm,
+                )
         ],
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _form,
-                child: ListView(
-                  children: <Widget>[
-                    Container(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          SizedBox(
-                            height: 20.0,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Align(
-                                alignment: Alignment.center,
-                                child: CircleAvatar(
-                                  radius: 100,
-                                  backgroundColor:
-                                      Theme.of(context).primaryColor,
-                                  child: ClipOval(
-                                    child: SizedBox(
-                                      width: 190.0,
-                                      height: 190.0,
-                                      child: _image != null
-                                          ? Image.file(
-                                              _image,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                            )
-                                          : _initValues['image'] != null &&
-                                                  _initValues['image']
-                                                      .isNotEmpty
-                                              ? (_imageUrl != null &&
-                                                      _imageUrl.isNotEmpty
-                                                  ? Image.network(
-                                                      _imageUrl,
-                                                      fit: BoxFit.cover,
-                                                      width: double.infinity,
-                                                    )
-                                                  : CircularProgressIndicator(
-                                                      backgroundColor:
-                                                          Colors.white,
-                                                    ))
-                                              : Padding(
-                                                  padding:
-                                                      EdgeInsets.only(top: 85),
-                                                  child: Text(
-                                                    'No Image Taken',
-                                                    style: TextStyle(
-                                                        color: Colors.white),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(top: 60.0),
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.camera_alt,
-                                    size: 30.0,
-                                  ),
-                                  onPressed: _takePicture,
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                    TextFormField(
-                      initialValue: _initValues['title'],
-                      decoration: InputDecoration(labelText: 'Title'),
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please provide a value.';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        _editedTransaction = Transaction(
-                            id: _editedTransaction.id,
-                            title: value,
-                            price: _editedTransaction.price,
-                            quantity: _editedTransaction.quantity,
-                            amount: _editedTransaction.amount,
-                            date: _selectedDate);
-                      },
-                    ),
-                    TextFormField(
-                      //initialValue: _initValues['price'],
-                      decoration: InputDecoration(labelText: 'Price(\u0e3f)'),
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.numberWithOptions(),
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please eneter a price';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid number.';
-                        }
-                        if (double.parse(value) <= 0) {
-                          return 'Please enter a number greater than zero.';
-                        }
-                        return null;
-                      },
-                      controller: _priceController,
-                      onChanged: (value) {
-                        double amount = value.isEmpty
-                            ? 0
-                            : double.parse(value) *
-                                double.parse(_quantityController.text);
-                        _amountController.text = amount.toStringAsFixed(2);
-                      },
-                      onSaved: (value) {
-                        _editedTransaction = Transaction(
-                            id: _editedTransaction.id,
-                            title: _editedTransaction.title,
-                            price: double.parse(value),
-                            quantity: _editedTransaction.quantity,
-                            amount: _editedTransaction.amount,
-                            date: _selectedDate);
-                      },
-                    ),
-                    TextFormField(
-                      //initialValue: _initValues['quantity'],
-                      decoration: InputDecoration(labelText: 'Quantity'),
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please eneter a quantity';
-                        }
-                        if (int.tryParse(value) == null) {
-                          return 'Please enter a valid number.';
-                        }
-                        if (int.parse(value) <= 0) {
-                          return 'Please enter a number greater than zero.';
-                        }
-                        return null;
-                      },
-                      controller: _quantityController,
-                      onChanged: (value) {
-                        double amount = value.isEmpty
-                            ? 0
-                            : int.parse(value) *
-                                double.parse(_priceController.text);
-                        _amountController.text = amount.toStringAsFixed(2);
-                      },
-                      onSaved: (value) {
-                        _editedTransaction = Transaction(
-                            id: _editedTransaction.id,
-                            title: _editedTransaction.title,
-                            price: _editedTransaction.price,
-                            quantity: int.parse(value),
-                            amount: _editedTransaction.amount,
-                            date: _selectedDate);
-                      },
-                    ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Amount(\u0e3f)'),
-                      enabled: false,
-                      controller: _amountController,
-                      onSaved: (value) {
-                        _editedTransaction = Transaction(
-                            id: _editedTransaction.id,
-                            title: _editedTransaction.title,
-                            price: _editedTransaction.price,
-                            quantity: _editedTransaction.quantity,
-                            amount: double.parse(value),
-                            date: _selectedDate);
-                      },
-                    ),
-                    Container(
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: TextFormField(
-                              decoration: InputDecoration(labelText: 'Date'),
-                              validator: (value) {
-                                if (value.isEmpty) {
-                                  return 'Please select a date.';
-                                }
-                                return null;
-                              },
-                              enabled: false,
-                              controller: _dateController,
-                              onSaved: (value) {
-                                _editedTransaction = Transaction(
-                                    id: _editedTransaction.id,
-                                    title: _editedTransaction.title,
-                                    price: _editedTransaction.price,
-                                    quantity: _editedTransaction.quantity,
-                                    amount: _editedTransaction.amount,
-                                    date: _selectedDate);
-                              },
-                            ),
-                          ),
-                          FlatButton(
-                            textColor: Theme.of(context).primaryColor,
-                            child: Icon(Icons.date_range),
-                            onPressed: _presentDatePicker,
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
+      body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _form,
+            child: ListView(
+              children: <Widget>[
+                ImageInput(_initValues, _imageUrl, _selectImage),
+                TextFormField(
+                  initialValue: _initValues['title'],
+                  decoration: InputDecoration(labelText: 'Title'),
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return 'Please provide a value.';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) {
+                    _editedTransaction = Transaction(
+                        id: _editedTransaction.id,
+                        title: value,
+                        price: _editedTransaction.price,
+                        quantity: _editedTransaction.quantity,
+                        amount: _editedTransaction.amount,
+                        date: _selectedDate);
+                  },
                 ),
-              )),
+                TextFormField(
+                  //initialValue: _initValues['price'],
+                  decoration: InputDecoration(labelText: 'Price(\u0e3f)'),
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.numberWithOptions(),
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return 'Please eneter a price';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid number.';
+                    }
+                    if (double.parse(value) <= 0) {
+                      return 'Please enter a number greater than zero.';
+                    }
+                    return null;
+                  },
+                  controller: _priceController,
+                  onChanged: (value) {
+                    double amount = value.isEmpty
+                        ? 0
+                        : double.parse(value) *
+                            double.parse(_quantityController.text);
+                    _amountController.text = amount.toStringAsFixed(2);
+                  },
+                  onSaved: (value) {
+                    _editedTransaction = Transaction(
+                        id: _editedTransaction.id,
+                        title: _editedTransaction.title,
+                        price: double.parse(value),
+                        quantity: _editedTransaction.quantity,
+                        amount: _editedTransaction.amount,
+                        date: _selectedDate);
+                  },
+                ),
+                TextFormField(
+                  //initialValue: _initValues['quantity'],
+                  decoration: InputDecoration(labelText: 'Quantity'),
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return 'Please eneter a quantity';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number.';
+                    }
+                    if (int.parse(value) <= 0) {
+                      return 'Please enter a number greater than zero.';
+                    }
+                    return null;
+                  },
+                  controller: _quantityController,
+                  onChanged: (value) {
+                    double amount = value.isEmpty
+                        ? 0
+                        : int.parse(value) *
+                            double.parse(_priceController.text);
+                    _amountController.text = amount.toStringAsFixed(2);
+                  },
+                  onSaved: (value) {
+                    _editedTransaction = Transaction(
+                        id: _editedTransaction.id,
+                        title: _editedTransaction.title,
+                        price: _editedTransaction.price,
+                        quantity: int.parse(value),
+                        amount: _editedTransaction.amount,
+                        date: _selectedDate);
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: 'Amount(\u0e3f)'),
+                  enabled: false,
+                  controller: _amountController,
+                  onSaved: (value) {
+                    _editedTransaction = Transaction(
+                        id: _editedTransaction.id,
+                        title: _editedTransaction.title,
+                        price: _editedTransaction.price,
+                        quantity: _editedTransaction.quantity,
+                        amount: double.parse(value),
+                        date: _selectedDate);
+                  },
+                ),
+                Container(
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: TextFormField(
+                          decoration: InputDecoration(labelText: 'Date'),
+                          validator: (value) {
+                            if (value.isEmpty) {
+                              return 'Please select a date.';
+                            }
+                            return null;
+                          },
+                          enabled: false,
+                          controller: _dateController,
+                          onSaved: (value) {
+                            _editedTransaction = Transaction(
+                                id: _editedTransaction.id,
+                                title: _editedTransaction.title,
+                                price: _editedTransaction.price,
+                                quantity: _editedTransaction.quantity,
+                                amount: _editedTransaction.amount,
+                                date: _selectedDate);
+                          },
+                        ),
+                      ),
+                      FlatButton(
+                        textColor: Theme.of(context).primaryColor,
+                        child: Icon(Icons.date_range),
+                        onPressed: _presentDatePicker,
+                      )
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -13,6 +14,15 @@ class Transactions with ChangeNotifier {
 
   List<Transaction> get items {
     return [..._items];
+  }
+
+  Future<void> filteredByDate(DateTime startDate, DateTime lastDate) {
+    _items = _items
+        .where((trs) =>
+            trs.date.isAfter(startDate) &&
+            trs.date.isBefore(lastDate.add(Duration(days: 1))))
+        .toList();
+    notifyListeners();
   }
 
   Transaction findById(String id) {
@@ -58,7 +68,7 @@ class Transactions with ChangeNotifier {
           'quantity': transaction.quantity,
           'amount': transaction.amount,
           'date': transaction.date.toIso8601String(),
-          'image': transaction.image
+          'image': transaction.image,
         }),
       );
       final newTransaction = Transaction(
@@ -67,6 +77,7 @@ class Transactions with ChangeNotifier {
         quantity: transaction.quantity,
         amount: transaction.amount,
         date: transaction.date,
+        image: transaction.image,
         id: json.decode(response.body)['name'],
       );
       _items.add(newTransaction);
@@ -95,17 +106,22 @@ class Transactions with ChangeNotifier {
     }
   }
 
-  Future<void> deleteTransaction(String id) async {
+  Future<void> deleteTransaction(String id, String image) async {
     final url = 'https://micro-eye-252307.firebaseio.com/transactions/$id.json';
     final trsIndex = _items.indexWhere((trs) => trs.id == id);
     var transaction = _items[trsIndex];
     _items.removeAt(trsIndex);
     notifyListeners();
-    final response = await http.delete(url);
+    var response = await http.delete(url);
     if (response.statusCode >= 400) {
       _items.insert(trsIndex, transaction);
       notifyListeners();
       throw HttpException('Could not delete transaction.');
+    }
+    if (image != null && image.isNotEmpty) {
+      StorageReference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child(image);
+      await firebaseStorageRef.delete();
     }
     transaction = null;
   }

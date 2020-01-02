@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_expenses/screens/edit_transaction_screen.dart';
-import '../providers/transactions.dart';
 import 'package:provider/provider.dart';
+
+import '../screens/edit_transaction_screen.dart';
+import '../providers/transactions.dart';
 
 class TransactionItem extends StatelessWidget {
   final String id;
   final String title;
   final double amount;
   final DateTime date;
+  final String image;
 
-  TransactionItem(this.id, this.title, this.amount, this.date);
+  TransactionItem(this.id, this.title, this.amount, this.date, this.image);
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +47,7 @@ class TransactionItem extends StatelessWidget {
               onPressed: () async {
                 try {
                   await Provider.of<Transactions>(context, listen: false)
-                      .deleteTransaction(id);
+                      .deleteTransaction(id, image);
                 } catch (error) {
                   scaffold.showSnackBar(
                     SnackBar(
