@@ -9,8 +9,10 @@ import '../exceptions/http_exception.dart';
 
 class Transactions with ChangeNotifier {
   List<Transaction> _items = [];
+  final String authToken;
+  final String userId;
 
-  //Transactions(this._items);
+  Transactions(this.authToken, this.userId, this._items);
 
   List<Transaction> get items {
     return [..._items];
@@ -29,9 +31,8 @@ class Transactions with ChangeNotifier {
     return _items.firstWhere((trs) => trs.id == id);
   }
 
-  Future<void> fetchAndSetTransactions([bool filterByUser = false]) async {
-    final filterString = '';
-    var url = 'https://micro-eye-252307.firebaseio.com/transactions.json';
+  Future<void> fetchAndSetTransactions() async {
+    var url = 'https://micro-eye-252307.firebaseio.com/transactions.json?auth$authToken';
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
@@ -58,7 +59,7 @@ class Transactions with ChangeNotifier {
   }
 
   Future<void> addTransaction(Transaction transaction) async {
-    final url = 'https://micro-eye-252307.firebaseio.com/transactions.json';
+    final url = 'https://micro-eye-252307.firebaseio.com/transactions.json?auth=$authToken';
     try {
       final response = await http.post(
         url,
@@ -91,7 +92,7 @@ class Transactions with ChangeNotifier {
     final trsIndex = _items.indexWhere((trs) => trs.id == id);
     if (trsIndex >= 0) {
       final url =
-          'https://micro-eye-252307.firebaseio.com/transactions/$id.json';
+          'https://micro-eye-252307.firebaseio.com/transactions/$id.json?auth=$authToken';
       await http.patch(url,
           body: json.encode({
             'title': transaction.title,
@@ -107,7 +108,7 @@ class Transactions with ChangeNotifier {
   }
 
   Future<void> deleteTransaction(String id, String image) async {
-    final url = 'https://micro-eye-252307.firebaseio.com/transactions/$id.json';
+    final url = 'https://micro-eye-252307.firebaseio.com/transactions/$id.json?auth=$authToken';
     final trsIndex = _items.indexWhere((trs) => trs.id == id);
     var transaction = _items[trsIndex];
     _items.removeAt(trsIndex);

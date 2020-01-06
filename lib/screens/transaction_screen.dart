@@ -5,6 +5,7 @@ import 'package:date_range_picker/date_range_picker.dart' as DateRangePicker;
 import '../providers/transactions.dart';
 import '../widgets/transaction_item.dart';
 import '../screens/edit_transaction_screen.dart';
+import '../widgets/app_drawer.dart';
 
 enum FilterOptions {
   DateRange,
@@ -24,7 +25,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
 
   Future<void> _refreshTransaction(BuildContext context) async {
     await Provider.of<Transactions>(context, listen: false)
-        .fetchAndSetTransactions(true);
+        .fetchAndSetTransactions();
 
     if (_filteredFirstDate != null && _filteredLastDate != null) {
       await Provider.of<Transactions>(context, listen: false)
@@ -93,6 +94,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
           )
         ],
       ),
+      drawer: AppDrawer(),
       body: FutureBuilder(
           future: _refreshTransaction(context),
           builder: (ctx, snapshot) =>
