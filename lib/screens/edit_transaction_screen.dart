@@ -110,6 +110,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           FirebaseStorage.instance.ref().child(fileName);
       firebaseStorageRef.putFile(_image);
       _editedTransaction.pickImage = fileName;
+      print("fileName: " + fileName);
     }
 
     if (_editedTransaction.id != null) {

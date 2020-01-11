@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_expenses/providers/auth.dart';
-import 'package:my_expenses/screens/auth_screen.dart';
 import 'package:provider/provider.dart';
 
+import './providers/auth.dart';
+import './screens/auth_screen.dart';
 import './providers/transactions.dart';
 import './screens/edit_transaction_screen.dart';
 import './screens/transaction_screen.dart';

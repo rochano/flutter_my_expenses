@@ -32,7 +32,9 @@ class Transactions with ChangeNotifier {
   }
 
   Future<void> fetchAndSetTransactions() async {
-    var url = 'https://micro-eye-252307.firebaseio.com/transactions.json?auth$authToken';
+    final filterString = 'orderBy="createdBy"&equalTo="$userId"';
+    var url = 'https://micro-eye-252307.firebaseio.com/transactions.json?auth=$authToken&$filterString';
+    //print(url);
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
@@ -70,6 +72,7 @@ class Transactions with ChangeNotifier {
           'amount': transaction.amount,
           'date': transaction.date.toIso8601String(),
           'image': transaction.image,
+          'createdBy': userId
         }),
       );
       final newTransaction = Transaction(
