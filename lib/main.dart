@@ -6,6 +6,7 @@ import './screens/auth_screen.dart';
 import './providers/transactions.dart';
 import './screens/edit_transaction_screen.dart';
 import './screens/transaction_screen.dart';
+import './screens/login_screen.dart';
 
 void main() => runApp(MyApp());
 
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
                       authResultSnapshot.connectionState ==
                               ConnectionState.waiting
                           ? CircularProgressIndicator()
-                          : AuthScreen(),
+                          : LoginScreen(),
                 ),
           routes: {
             TransactionScreen.routName: (ctx) => TransactionScreen(),
