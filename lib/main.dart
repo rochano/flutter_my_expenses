@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
                       authResultSnapshot.connectionState ==
                               ConnectionState.waiting
                           ? CircularProgressIndicator()
-                          : LoginScreen(),
+                          : AuthScreen(),
                 ),
           routes: {
             TransactionScreen.routName: (ctx) => TransactionScreen(),

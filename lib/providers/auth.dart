@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -87,7 +89,8 @@ class Auth with ChangeNotifier {
     if (!prefs.containsKey('userData')) {
       return false;
     }
-    final extractedUserData = json.decode(prefs.getString('userData')) as Map<String, Object>;
+    final extractedUserData =
+        json.decode(prefs.getString('userData')) as Map<String, Object>;
     final expiryDate = DateTime.parse(extractedUserData['expiryDate']);
 
     if (expiryDate.isBefore(DateTime.now())) {
@@ -121,5 +124,47 @@ class Auth with ChangeNotifier {
     }
     final timeToExpiry = _expiryDate.difference(DateTime.now()).inSeconds;
     _authTimer = Timer(Duration(seconds: timeToExpiry), logout);
+  }
+
+  Future<void> loginWithFb() async {
+    var firebaseAuth = FirebaseAuth.instance;
+    FacebookLogin facebookLogin = FacebookLogin();
+    FacebookLoginResult facebookLoginResult =
+        await facebookLogin.logIn(['email']);
+
+    final accessToken = facebookLoginResult.accessToken.token;
+    if (facebookLoginResult.status == FacebookLoginStatus.loggedIn) {
+      final graphResponse = await http.get(
+          'https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email&access_token=${accessToken}');
+      print(graphResponse.body);
+      final profile = json.decode(graphResponse.body);
+      print("User : " + profile['name']);
+
+      final facebookAuthCred =
+          FacebookAuthProvider.getCredential(accessToken: accessToken);
+      final user = await firebaseAuth.signInWithCredential(facebookAuthCred);
+      print("User : " + user.toString());
+      final FirebaseUser fbUser = await firebaseAuth.currentUser();
+      final uid = fbUser.uid;
+      final token = await fbUser.getIdToken();
+      print("uid : " + uid);
+      print("token : " + token.token);
+      print("expirationTime : " + token.expirationTime.toIso8601String());
+
+      _token = token.token;
+      _userId = uid;
+      _expiryDate = token.expirationTime;
+      _autoLogout();
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      final userData = json.encode(
+        {
+          'token': _token,
+          'userId': _userId,
+          'expiryDate': _expiryDate.toIso8601String(),
+        },
+      );
+      prefs.setString('userData', userData);
+    }
   }
 }

@@ -1,7 +1,11 @@
-import 'dart:math';
+import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 import '../providers/auth.dart';
 import '../exceptions/http_exception.dart';
@@ -10,6 +14,37 @@ enum AuthMode { Signup, Login }
 
 class AuthScreen extends StatelessWidget {
   static const routeName = '/auth';
+
+  Container _buildFacebookLoginButton(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(left: 16, top: 0, right: 16, bottom: 0),
+      child: ButtonTheme(
+        height: 48,
+        child: RaisedButton.icon(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: () {
+              _handleSignIn(context, "FB");
+            },
+            color: Color.fromRGBO(59, 89, 152, 1),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textColor: Colors.white,
+            icon: Icon(FontAwesomeIcons.facebookF),
+            label: Text(
+              "Connect with Facebook",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            )),
+      ),
+    );
+  }
+
+  Future<void> _handleSignIn(BuildContext context, String type) async {
+    // Log user in
+    await Provider.of<Auth>(context, listen: false).loginWithFb();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +112,33 @@ class AuthScreen extends StatelessWidget {
                     flex: deviceSize.width > 600 ? 2 : 1,
                     child: AuthCard(),
                   ),
+                  Row(children: <Widget>[
+                    Expanded(
+                      child: new Container(
+                          margin:
+                              const EdgeInsets.only(left: 10.0, right: 15.0),
+                          child: Divider(
+                            color: Colors.white,
+                            height: 50,
+                            thickness: 1,
+                          )),
+                    ),
+                    Text(
+                      "OR",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    Expanded(
+                      child: new Container(
+                          margin:
+                              const EdgeInsets.only(left: 15.0, right: 10.0),
+                          child: Divider(
+                            color: Colors.white,
+                            height: 50,
+                            thickness: 1,
+                          )),
+                    ),
+                  ]),
+                  _buildFacebookLoginButton(context),
                 ],
               ),
             ),
@@ -147,17 +209,17 @@ class _AuthCardState extends State<AuthCard>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-            title: Text('An Error Occurred!'),
-            content: Text(message),
-            actions: <Widget>[
-              FlatButton(
-                child: Text('Okay'),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                },
-              )
-            ],
-          ),
+        title: Text('An Error Occurred!'),
+        content: Text(message),
+        actions: <Widget>[
+          FlatButton(
+            child: Text('Okay'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
     );
   }
 
@@ -246,7 +308,8 @@ class _AuthCardState extends State<AuthCard>
             child: Column(
               children: <Widget>[
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'E-Mail'),
+                  decoration: InputDecoration(
+                      labelText: 'E-Mail', icon: Icon(Icons.email)),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value.isEmpty || !value.contains('@')) {
@@ -258,7 +321,8 @@ class _AuthCardState extends State<AuthCard>
                   },
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Password'),
+                  decoration: InputDecoration(
+                      labelText: 'Password', icon: Icon(Icons.lock)),
                   obscureText: true,
                   controller: _passwordController,
                   validator: (value) {
@@ -283,8 +347,9 @@ class _AuthCardState extends State<AuthCard>
                       position: _slideAnimation,
                       child: TextFormField(
                         enabled: _authMode == AuthMode.Signup,
-                        decoration:
-                            InputDecoration(labelText: 'Confirm Password'),
+                        decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            icon: Icon(Icons.lock)),
                         obscureText: true,
                         validator: _authMode == AuthMode.Signup
                             ? (value) {
@@ -303,17 +368,31 @@ class _AuthCardState extends State<AuthCard>
                 if (_isLoading)
                   CircularProgressIndicator()
                 else
-                  RaisedButton(
-                    child:
-                        Text(_authMode == AuthMode.Login ? 'LOGIN' : 'SIGN UP'),
-                    onPressed: _submit,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                  Container(
+                    margin:
+                        EdgeInsets.only(left: 16, top: 0, right: 16, bottom: 0),
+                    child: ButtonTheme(
+                      height: 38,
+                      child: RaisedButton.icon(
+                        icon: Icon(
+                          _authMode == AuthMode.Login
+                              ? FontAwesomeIcons.key
+                              : FontAwesomeIcons.userPlus,
+                          size: 15,
+                        ),
+                        label: Text(
+                            _authMode == AuthMode.Login ? 'LOGIN' : 'SIGN UP'),
+                        materialTapTargetSize: MaterialTapTargetSize.padded,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        onPressed: _submit,
+                        //padding:
+                        //    EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
+                        color: Theme.of(context).primaryColor,
+                        textColor:
+                            Theme.of(context).primaryTextTheme.button.color,
+                      ),
                     ),
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
-                    color: Theme.of(context).primaryColor,
-                    textColor: Theme.of(context).primaryTextTheme.button.color,
                   ),
                 FlatButton(
                   child: Text(
